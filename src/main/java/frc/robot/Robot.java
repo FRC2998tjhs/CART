@@ -10,6 +10,8 @@ import edu.wpi.first.wpilibj.motorcontrol.PWMVictorSPX;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
+import frc.robot.Constants.ports;
+
 /**
  * The methods in this class are called automatically corresponding to each mode, as described in
  * the TimedRobot documentation. If you change the name of this class or the package after creating
@@ -18,12 +20,12 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 public class Robot extends TimedRobot {
 
   // up and down buttons
-  DigitalInput button_nine;
-  DigitalInput button_eight;
+  DigitalInput down_button;
+  DigitalInput up_button;
 
   // limit switches
-  DigitalInput button_seven;
-  DigitalInput button_six;
+  DigitalInput up_limit;
+  DigitalInput down_limit;
 
   PWMVictorSPX controller_1;
   PWMVictorSPX controller_2;
@@ -31,12 +33,31 @@ public class Robot extends TimedRobot {
 
   private Command m_autonomousCommand;
 
-  private final RobotContainer m_robotContainer;
+  private static RobotContainer m_robotContainer;
 
   public void set_speed(float speed) {
     controller_1.set(speed);
     controller_2.set(speed);
     controller_3.set(speed);
+  }
+  
+  public float get_desired_speed() {
+    var up_button_status = up_button.get();
+    var down_button_status = down_button.get();
+    var upper_limit_switch = up_limit.get();
+    var lower_limit_switch = down_limit.get();
+
+    if (!upper_limit_switch || !lower_limit_switch) {
+      return 0;
+    }
+
+    if (!down_button_status) {
+      return 1;
+    } else if (!up_button_status) {
+      return -1;
+    }
+
+    return 0;
   }
 
   /**
@@ -47,15 +68,15 @@ public class Robot extends TimedRobot {
     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
     // autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
-    button_nine = new DigitalInput(9); // down
-    button_eight = new DigitalInput(8); // up
+    up_button = new DigitalInput(ports.MOVE_UP);
+    down_button = new DigitalInput(ports.MOVE_DOWN);
 
-    button_seven = new DigitalInput(7); // up
-    button_six = new DigitalInput(6); // up
+    up_limit = new DigitalInput(ports.LIMiT_UP);
+    down_limit = new DigitalInput(ports.LIMIT_DONW);
 
-    controller_1 = new PWMVictorSPX(9);
-    controller_2 = new PWMVictorSPX(8);
-    controller_3 = new PWMVictorSPX(7);
+    controller_1 = new PWMVictorSPX(ports.MOTOR_PORTS[0]);
+    controller_2 = new PWMVictorSPX(ports.MOTOR_PORTS[1]);
+    controller_3 = new PWMVictorSPX(ports.MOTOR_PORTS[2]);
   }
 
   /**
@@ -67,20 +88,8 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
-    var up_button_status = button_eight.get();
-    var down_button_status = button_nine.get();
-    var upper_limit_switch = button_seven.get();
-    var lower_limit_switch = button_six.get();
 
-    if (!upper_limit_switch || !lower_limit_switch) {
-      set_speed(0);
-    } else if (!down_button_status) {
-      set_speed(1);
-    } else if (!up_button_status) {
-      set_speed(-1);
-    } else {
-      set_speed(0);
-    }
+    set_speed(get_desired_speed());
 
     // Runs the Scheduler.  This is responsible for polling buttons, adding newly-scheduled
     // commands, running already-scheduled commands, removing finished or interrupted commands,
