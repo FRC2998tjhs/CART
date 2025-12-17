@@ -17,8 +17,14 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  */
 public class Robot extends TimedRobot {
 
+  // up and down buttons
+  DigitalInput button_nine;
+  DigitalInput button_eight;
 
- 	DigitalInput mySwitch;
+  // limit switches
+  DigitalInput button_seven;
+  DigitalInput button_six;
+
   PWMVictorSPX controller_1;
   PWMVictorSPX controller_2;
   PWMVictorSPX controller_3;
@@ -26,6 +32,12 @@ public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
 
   private final RobotContainer m_robotContainer;
+
+  public void set_speed(float speed) {
+    controller_1.set(speed);
+    controller_2.set(speed);
+    controller_3.set(speed);
+  }
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -35,7 +47,15 @@ public class Robot extends TimedRobot {
     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
     // autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
-    mySwitch = new DigitalInput(9);
+    button_nine = new DigitalInput(9); // down
+    button_eight = new DigitalInput(8); // up
+
+    button_seven = new DigitalInput(7); // up
+    button_six = new DigitalInput(6); // up
+
+    controller_1 = new PWMVictorSPX(9);
+    controller_2 = new PWMVictorSPX(8);
+    controller_3 = new PWMVictorSPX(7);
   }
 
   /**
@@ -47,12 +67,26 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
+    var up_button_status = button_eight.get();
+    var down_button_status = button_nine.get();
+    var upper_limit_switch = button_seven.get();
+    var lower_limit_switch = button_six.get();
+
+    if (!upper_limit_switch || !lower_limit_switch) {
+      set_speed(0);
+    } else if (!down_button_status) {
+      set_speed(1);
+    } else if (!up_button_status) {
+      set_speed(-1);
+    } else {
+      set_speed(0);
+    }
+
     // Runs the Scheduler.  This is responsible for polling buttons, adding newly-scheduled
     // commands, running already-scheduled commands, removing finished or interrupted commands,
     // and running subsystem periodic() methods.  This must be called from the robot's periodic
     // block in order for anything in the Command-based framework to work.
     CommandScheduler.getInstance().run();
-    
   }
 
   /** This function is called once each time the robot enters Disabled mode. */
@@ -83,11 +117,6 @@ public class Robot extends TimedRobot {
     // teleop starts running. If you want the autonomous to
     // continue until interrupted by another command, remove
     // this line or comment it out.
-
-    controller_1 = new PWMVictorSPX(9);
-    controller_2 = new PWMVictorSPX(8);
-    controller_3 = new PWMVictorSPX(7);
-
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
@@ -96,17 +125,6 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    var switch_status = mySwitch.get();
-    if (!switch_status) {
-      System.out.println("moving");
-      controller_1.set(1);
-      controller_2.set(1);
-      controller_3.set(1);
-    } else {
-      controller_1.set(0);
-      controller_2.set(0);
-      controller_3.set(0);
-    }
   }
 
   @Override
